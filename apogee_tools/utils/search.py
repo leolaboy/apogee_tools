@@ -84,7 +84,7 @@ def searchVisits(**kwargs):
     try:
         hdu = fits.open(ap_path + '/%s'%allvisitFile)
     except:
-        raise Exception('No allVisit file found. Try running: "ap.apogee_hack.tools.download.allVisit(dr=your_data_release)"')
+        raise Exception(f'No allVisit file found in {ap_path + "/%s"%allvisitFile}. Try running: "ap.apogee_hack.tools.download.allVisit(dr=your_data_release)"')
 
     keys = hdu[1].header
     data = hdu[1].data
@@ -109,7 +109,7 @@ def searchVisits(**kwargs):
         return ap_id, plates, mjds, fibers
 
 
-def download(star_id, **kwargs):
+def download(star_id, type='ascap', dr=17, save_path=None, ap_path=None):
 
     """
     Download star by 2MASS name
@@ -120,9 +120,9 @@ def download(star_id, **kwargs):
     Input:  
 
     'star_id'   : (str) 2MASS name
-    'type'      : (str) can be: 'ap1d', 'aspcap', 'apstar', or 'apvisit'
-    'dr'        : (str) data release; default: dr15
-    'dir'       : (str) the path to save the files; default is the path for apogee_data
+    'type'      : (str) can be: 'ap1d', 'aspcap', 'apstar', or 'apvisit', by default 'ascap'
+    'dr'        : (int) data release, by default 17
+    'save_path' : (str) the path to save the files; default is the path for apogee_data
     'ap_path'   : (str) the path for allVisit and allStar files; default is the path for apogee_data
 
     Example
@@ -136,18 +136,26 @@ def download(star_id, **kwargs):
 
     """
 
-    dr = kwargs.get('dr', 'dr17')
-    #print('Data Release:', dr)
-
     # Datatypes to download
-    d_type = kwargs.get('type','aspcap').lower()
+    d_type = type
 
     # Get download directory; create if it doesn't already exist
     default_dir = AP_PATH + '/%s_data/' %(d_type)
     ## download to external drive
     #default_dir = '/Volumes/LaCie/apogee/apvisit/'
-    dl_dir  = kwargs.get('dir', default_dir)
-    ap_path = kwargs.get('ap_path', AP_PATH)
+    if save_path is None:
+        if not db_path.endswith('/'):
+            db_path += '/'
+        dl_dir = db_path
+    else:
+        if not save_path.endswith('/'):
+            save_path += '/'
+        dl_dir  = save_path
+        if not os.path.exists(dl_dir):
+            os.makedirs(dl_dir)
+    
+    if ap_path is None:
+        ap_path = AP_PATH
 
     # Make sure id is in the proper 2MASS format
     if '+' in star_id:
@@ -156,9 +164,6 @@ def download(star_id, **kwargs):
         star_id = '2M' + star_id.split('-')[0][-8:] + '-' + star_id.split('-')[1]
     else:
         print('Designation improperly formated. Must be form "__00034394+8606422".')
-
-    if not os.path.exists(dl_dir):
-        os.makedirs(dl_dir)
 
     key = {'dr13': ['r6','l30e','l30e.2'], 
            'dr14': ['r8','l31c','l31c.2'], 
@@ -195,7 +200,7 @@ def download(star_id, **kwargs):
 
                 if dr >= 16:
                     dl_name = fname
-                    main_url = "https://{}.sdss.org/sas/{}/apogee/spectro/aspcap/{}/{}/{}/{}/{}".format(data_release, data_release, key[data_release][0], key[data_release][1], telescopes[0], fields[0], dl_name)
+                    main_url = f"https://{data_release}.sdss.org/sas/{data_release}/apogee/spectro/aspcap/{data_release}/synspec_rev1/{telescopes[0]}/{fields[0]}/{dl_name}"
                     print('Downloading {} from {} {} survey.'.format(ap_id, data_release, telescopes[0]))
                     print('Downloading from: %s'%main_url)
                     wget.download(main_url, dl_dir+dl_name)
@@ -265,7 +270,7 @@ def download(star_id, **kwargs):
                     print('Downloading from: %s'%main_url)
                     wget.download(main_url, dl_dir+dl_name)
                     os.rename(dl_dir+dl_name, dl_dir+save_name)
-                    return 0
+                    return
 
             if len(ap_id) != 0:
                 #1. Try downloading from the 2.5m survey

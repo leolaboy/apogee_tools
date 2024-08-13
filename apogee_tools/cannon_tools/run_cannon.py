@@ -4,11 +4,12 @@ from operator import itemgetter
 from astropy.io import ascii
 from pathlib import Path
 import apogee_tools as ap
+import warnings 
 
 try:
 	from TheCannon import apogee, dataset, model
 except:
-	print("apogee_tools: Optional dependency TheCannon is not installed. To use cannon_tools, run 'pip install TheCannon' \n")
+	warnings.warn("apogee_tools: Optional dependency TheCannon is not installed. To use cannon_tools, run 'pip install TheCannon' \n")
 
 import os
 os.environ["PATH"] += os.pathsep + '/usr/local/texlive/2016/bin/x86_64-darwin'
